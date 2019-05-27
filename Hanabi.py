@@ -49,6 +49,7 @@ class Game:
             this_player_cards = []
             for j in range(0, num_of_cards):
                 col,val = self.pick_new_card()
+                pile_dict[col][val] -= 1
                 this_player_cards = this_player_cards + [[col,val]]
             self.player_cards = self.player_cards + [this_player_cards]
 
@@ -65,3 +66,7 @@ class Game:
 
 game = Game(4,4,3)
 print(game.player_cards)
+
+# TODO: -function to update pile_dict for players
+#       -function for all three actions
+#       -function for choosing actions
