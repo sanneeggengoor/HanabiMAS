@@ -96,6 +96,7 @@ class Game:
         self.possibility_tables = np.zeros((nplayers,ncards,ncolors,5)) + 1
         self.possible_cards = np.array([[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1]])
 
+
 # function that updates the number of cards still possible to have in your hand,
 # for every card (i.e. not discarded or played)
     def update_possible_cards(self,card_color,card_value):
