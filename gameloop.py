@@ -22,10 +22,51 @@ class Player:
         self.otherplayers = otherplayers
         self.commondicts = commondicts
 
-    def select_action(self):
+    def select_action(self,possibility_tables, hint_tables,targeted_cards,playable_cards,possible_cards,dead_cards,hint_count):
+        if not self.check_whether_playable_card(possibility_tables,playable_cards)[0] == -1:
+            return ['PLAY', self.check_whether_playable_card(possibility_tables,playable_cards)]
+        elif (np.sum(playable_cards) + (50-np.sum(np.sum(possible_cards)))) < 5 and self.check_dead_card(possibility_tables,dead_cards) >= 0:
+            return ['DISCARD', self.check_dead_card(possibility_tables,dead_cards)]
+        elif hint_count > 0:
+            return ['HINT']
+        elif self.check_dead_card(possibility_tables,dead_cards) >= 0:
+            return ['DISCARD', self.check_dead_card(possibility_tables,dead_cards)]
+        elif self.check_whether_card_known_duplicate(possibility_tables):
+            return["DON'T FORGET TO IMPLEMENT STEP 5 IN ALGORITHM"]
+        elif self.check_whether_dispensable_card_known(possibility_tables):
+            return["DON'T FORGET TO IMPLEMENT STEP 6 IN ALGORITHM"]
+        else:
+            return['DISCARD',0]
         action = 'PASS'
         return action
 
+    def check_whether_playable_card(self,possibility_tables,playable_cards):
+        for card in range(0,5):
+            if np.sum(np.sum(possibility_tables[self.id,card,:,:])) == 1:
+                play_card_col, play_card_val = np.where(possibility_tables == 1)
+                if playable_cards[play_card_col] == play_card_val:
+                    return [card,play_card_col, play_card_val]
+        return [-1,-1]
+
+    def check_dead_card(self, possibility_tables, dead_cards):
+        for card in range(0,5):
+            possibly_all_dead = True
+            for color in range(0,5):
+                for value in range(0,5):
+                    if possibility_tables[self.id,card,color,value] != 0 and value > dead_cards[color]:
+                        possibly_all_dead = False
+                        break
+                if not possibly_all_dead:
+                    break
+            if possibly_all_dead:
+                return card
+        return -1
+
+    def check_whether_card_known_duplicate(self,possibility_tables):
+        return "still needs to be implemented!"
+
+    def check_whether_dispensable_card_known(self,possibility_tables):
+        return "still needs to be implemented!"
 
 class Game:
     def __init__(self, nplayers, ncards, ncolors):
@@ -209,9 +250,10 @@ class Game:
         while self.mistake_count>=0:
             #Update player info
             self.update_player_info()
-
+            targeted_cards = self.return_targeted_cards()
+            hint_tables = self.targeted_cards_to_hints(targeted_cards)
             #Call to player for action
-            this_act = self.playerlist.get(self.turn_token).select_action()
+            this_act = self.playerlist.get(self.turn_token).select_action(self.possibility_tables,hint_tables,targeted_cards,self.playable_cards,self.possible_cards, self.dead_cards,self.hint_count)
             #get all details required for action
             print (this_act)
 
