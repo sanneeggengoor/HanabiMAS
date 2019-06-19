@@ -22,10 +22,51 @@ class Player:
         self.otherplayers = otherplayers
         self.commondicts = commondicts
 
-    def select_action(self):
+    def select_action(self,possibility_tables,playable_cards,possible_cards,dead_cards,hint_count):
+        if not self.check_whether_playable_card(possibility_tables,playable_cards)[0] == -1:
+            return ['PLAY', self.check_whether_playable_card(possibility_tables,playable_cards)]
+        elif (np.sum(playable_cards) + (50-np.sum(np.sum(possible_cards)))) < 5 and self.check_dead_card(possibility_tables,dead_cards) >= 0:
+            return ['DISCARD', self.check_dead_card(possibility_tables,dead_cards)]
+        elif hint_count > 0:
+            return ['HINT']
+        elif self.check_dead_card(possibility_tables,dead_cards) >= 0:
+            return ['DISCARD', self.check_dead_card(possibility_tables,dead_cards)]
+        elif self.check_whether_card_known_duplicate(possibility_tables):
+            return["DON'T FORGET TO IMPLEMENT STEP 5 IN ALGORITHM"]
+        elif self.check_whether_dispensable_card_known(possibility_tables):
+            return["DON'T FORGET TO IMPLEMENT STEP 6 IN ALGORITHM"]
+        else:
+            return['DISCARD',0]
         action = 'PASS'
         return action
 
+    def check_whether_playable_card(self,possibility_tables,playable_cards):
+        for card in range(0,5):
+            if np.sum(np.sum(possibility_tables[self.id,card,:,:])) == 1:
+                play_card_col, play_card_val = np.where(possibility_tables == 1)
+                if playable_cards[play_card_col] == play_card_val:
+                    return [card,play_card_col, play_card_val]
+        return [-1,-1]
+
+    def check_dead_card(self, possibility_tables, dead_cards):
+        for card in range(0,5):
+            possibly_all_dead = True
+            for color in range(0,5):
+                for value in range(0,5):
+                    if possibility_tables[self.id,card,color,value] != 0 and value > dead_cards[color]:
+                        possibly_all_dead = False
+                        break
+                if not possibly_all_dead:
+                    break
+            if possibly_all_dead:
+                return card
+        return -1
+
+    def check_whether_card_known_duplicate(self,possibility_tables):
+        return "still needs to be implemented!"
+
+    def check_whether_dispensable_card_known(self,possibility_tables):
+        return "still needs to be implemented!"
 
 class Game:
     def __init__(self, nplayers, ncards, ncolors):
@@ -189,7 +230,17 @@ class Game:
     def play_hint(self, origin_player_id, target_player_id, hint):
         self.hint_count = self.hint_count-1
 
-    def play_card(self, player_id, card):
+    def play_card(self, player_id, card_to_play, color, value):
+        self.dead_cards[color] += 1
+        self.playable_cards[color] += 1
+        self.update_possible_cards(color,value)
+        for card in range(card_to_play,3):
+            self.possibility_tables[player_id,card,:,:] = self.possibility_tables[player_id,card + 1,:,:]
+        newcard = np.zeros((self.ncolors,5))
+        newcard[np.where(self.possible_cards > 0)] = 1
+        self.possibility_tables[player_id,3,:,:] = newcard
+        print('write a function for dealing a new card')
+        ########### A NEW CARD NEEDS TO BE DEALT
         #remove card from player, draw card later
         self.score += 1
 
@@ -199,21 +250,25 @@ class Game:
 
     def play_game(self):
         #select player to start
-        self.turn_token = 1 #randomize
-        self.incorporate_hint_wordly(2,3,1,True)    #(self,player,card,value_color,color_hint)
-        self.incorporate_hint_wordly(4,0,0,False)
+        self.turn_token = 0 #randomize
+        self.incorporate_hint_wordly(2,3,1,True)
+        self.incorporate_hint_wordly(3,0,0,False)
         self.incorporate_hint_wordly(1,2,3,True)
         # print(self.possibility_tables[4,0])
         tg = self.return_targeted_cards()
         print(self.targeted_cards_to_hints(tg))
         #loop till you out of tokens
         while self.mistake_count>=0:
+
             #Update player info
             self.update_player_info()
-
+            targeted_cards = self.return_targeted_cards()
+            hint_tables = self.targeted_cards_to_hints(targeted_cards)
             #Call to player for action
-            this_act = self.playerlist.get(self.turn_token).select_action()
+            this_act = self.playerlist.get(self.turn_token).select_action(self.possibility_tables,self.playable_cards,self.possible_cards, self.dead_cards,self.hint_count)
             #get all details required for action
+            if this_act[0] == 'PLAY':
+                self.play_card(self.turn_token, this_act[1], this_act[2], this_act[3])
             print (this_act)
 
 
@@ -227,11 +282,14 @@ class Game:
                 self.play_token = self.play_token+1 if self.play_token != self.nplayers else 1
 
             self.mistake_count-=1
+            self.turn_token += 1
+            if self.turn_token == self.nplayers:
+                self.turn_token = 0
 
 
 
 def gameloop():
-    manager = Game(5,5,5)
+    manager = Game(4,5,5)
     print (manager.playerlist)
     manager.deal_initial()
     manager.print_player_info()
@@ -245,7 +303,7 @@ def gameloop():
     #next turn
 
 #gameloop()
-manager = Game(5,5,5)
+manager = Game(4,5,5)
 print (manager.playerlist)
 manager.deal_initial()
 manager.print_player_info()
