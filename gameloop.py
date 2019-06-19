@@ -52,6 +52,7 @@ class Game:
         self.possibility_tables = np.zeros((nplayers,ncards,ncolors,5)) + 1
         self.possible_cards = np.array([[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1]])
 
+
 # function that updates the number of cards still possible to have in your hand,
 # for every card (i.e. not discarded or played)
     def update_possible_cards(self,card_color,card_value):
@@ -199,7 +200,7 @@ class Game:
     def play_game(self):
         #select player to start
         self.turn_token = 1 #randomize
-        self.incorporate_hint_wordly(2,3,1,True)
+        self.incorporate_hint_wordly(2,3,1,True)    #(self,player,card,value_color,color_hint)
         self.incorporate_hint_wordly(4,0,0,False)
         self.incorporate_hint_wordly(1,2,3,True)
         # print(self.possibility_tables[4,0])
