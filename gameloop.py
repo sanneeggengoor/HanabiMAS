@@ -1,5 +1,6 @@
 
 import random
+import numpy as np
 
 class Card:
     def __init__(self, color, number, id):
@@ -25,6 +26,7 @@ class Player:
         action = 'PASS'
         return action
 
+
 class Game:
     def __init__(self, nplayers, ncards, ncolors):
         self.colors_all = ['white', 'blue', 'red', 'green', 'yellow', 'orange']
@@ -37,6 +39,8 @@ class Game:
         self.ncards = ncards
         self.ncolors = ncolors
         self.center = {}
+        self.playable_cards = np.zeros((ncolors)) + 1
+        print(self.playable_cards)
         self.discard_pile = []
         self.commondicts = {'center': self.center,
                             'discard_dict': self.discard_pile
@@ -44,11 +48,51 @@ class Game:
         playerlist = self.create_players(self.nplayers, self.commondicts)
         self.playerlist = playerlist
         self.deck = self.create_deck(self.colors_all[0:self.ncolors+1], self.cardlist)
+        self.possibility_tables = np.zeros((nplayers,ncards,ncolors,5)) + 1
+        self.possible_cards = np.array([[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1],[3,2,2,2,1]])
+
+# function that updates the number of cards still possible to have in your hand,
+# for every card (i.e. not discarded or played)
+    def update_possible_cards(self,card_color,card_value):
+        self.possible_cards[card_color,card_value] -= 1
+        # if the number of cards of this type becomes equal to 0, this is common
+        # knowledge and this card is for no one possible to have in their hand
+        if self.possible_cards[card_color, card_value] == 0:
+            self.possibility_tables[:,:,card_color, card_value] = 0
+
+# Hints also have to be incorporated wordly
+    def incorporate_hint_wordly(self,player,card,value_color,color_hint):
+        if color_hint:
+            for color in range(0,self.ncolors):
+                if color != value_color:
+                    self.possibility_tables[player,card,color,:] = 0
+        else:
+            for value in range(0,5):
+                if value != value_color:
+                    self.possibility_tables[player,card,:, value] = 0
+
+# return the cards that are targeted this round
+    def return_targeted_cards(self):
+        targeted_cards = np.zeros((self.nplayers))
+        for player in range(0,self.nplayers):
+            cards = np.zeros((self.ncards))
+            for card in range(0,self.ncards):
+                ncards = 0
+                nplayable_cards = 0
+                for color in range(0,self.ncolors):
+                    for value in range(0,5):
+                        if self.possibility_tables[player,card,color,value] == 1:
+                            ncards += self.possible_cards[color,value]
+                            if self.playable_cards[color] == value:
+                                nplayable_cards += self.possible_cards[color,value]
+                cards[card] = ncards/nplayable_cards
+            targeted_cards[player] = np.argmax(cards)
+        return targeted_cards
 
 
     def create_players(self, nplayers, commondicts):
         playerlist = {}
-        pids = range(1,self.nplayers+1)
+        pids = range(0,self.nplayers)
         for pid in pids:
             otherplayers = {}
             others = [p for p in pids if p is not pid]
@@ -118,7 +162,10 @@ class Game:
     def play_game(self):
         #select player to start
         self.turn_token = 1 #randomize
-
+        self.incorporate_hint_wordly(2,3,1,True)
+        self.incorporate_hint_wordly(4,0,1,False)
+        self.incorporate_hint_wordly(1,2,3,True)
+        print(self.return_targeted_cards())
         #loop till you out of tokens
         while self.mistake_count>=0:
             #Update player info
@@ -128,6 +175,7 @@ class Game:
             this_act = self.playerlist.get(self.turn_token).select_action()
             #get all details required for action
             print (this_act)
+
 
             if this_act == 'HINT':
                 self.play_hint()
@@ -143,7 +191,7 @@ class Game:
 
 
 def gameloop():
-    manager = Game(4,4,3)
+    manager = Game(5,5,5)
     print (manager.playerlist)
     manager.deal_initial()
     manager.print_player_info()
@@ -157,7 +205,7 @@ def gameloop():
     #next turn
 
 #gameloop()
-manager = Game(4,4,3)
+manager = Game(5,5,5)
 print (manager.playerlist)
 manager.deal_initial()
 manager.print_player_info()
