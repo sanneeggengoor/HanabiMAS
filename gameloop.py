@@ -246,6 +246,7 @@ def gameloop():
 
 #gameloop()
 manager = Game(5,5,5)
+print (manager.playerlist)
 manager.deal_initial()
 manager.print_player_info()
 manager.play_game()
