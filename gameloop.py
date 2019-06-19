@@ -247,6 +247,13 @@ class Game:
         # print(hintval)
         hint = self.convert_val_to_hint(origin_player_id,hintval,targeted_cards)
         print(hint)
+        if hint[3]:
+            value_color =  int(self.colors_all.index(true_card[0]))
+        else:
+            value_color = hint[2]
+        self.incorporate_hint_wordly(int(hint[0]),int(hint[1]),value_color,hint[3])
+        # TODO: make sure the 'hidden' meaning of the hint gets conveyed
+
 
         self.hint_count = self.hint_count-1
 
@@ -258,17 +265,18 @@ class Game:
         hand = self.playerlist.get(hint_player).hand
         tg = targeted_cards[int(hint_player)]
         # TO DO: IMPLEMENT MOST INFORMATIVE WORDLY HINTS
+        # TO DO: MAKE SURE THAT THE HINT MAKES NUMBER OF POSSIBILITIES SMALLER
         # prefer giving hints about colors or values with multiple occurences
         if hint_color:
             if tg != 1:
-                return[1,hand[0][0]]
+                return [hint_player,1,hand[0][0],hint_color]
             else:
-                return[2,hand[1][0]]
+                return [hint_player,2,hand[1][0],hint_color]
         else:
             if tg != 1:
-                return[1,hand[0][1]]
+                return [hint_player,1,hand[0][1],hint_color]
             else:
-                return[2,hand[1][1]]
+                return [hint_player,2,hand[1][1],hint_color]
 
 
 
