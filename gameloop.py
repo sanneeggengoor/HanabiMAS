@@ -30,7 +30,7 @@ class Player:
 class Game:
     def __init__(self, nplayers, ncards, ncolors):
         self.colors_all = ['white', 'blue', 'red', 'green', 'yellow', 'orange']
-        self.cardlist = [1,1,1,2,2,3,3,4,4,5]
+        self.cardlist = [0,0,0,1,1,2,2,3,3,4]
         self.hint_count = 8
         self.mistake_count = 3
         self.score = 0
@@ -39,7 +39,8 @@ class Game:
         self.ncards = ncards
         self.ncolors = ncolors
         self.center = {}
-        self.playable_cards = np.zeros((ncolors)) + 1
+        self.playable_cards = np.zeros((ncolors))
+        self.dead_cards = np.zeros((ncolors)) -1
         print(self.playable_cards)
         self.discard_pile = []
         self.commondicts = {'center': self.center,
@@ -85,9 +86,45 @@ class Game:
                             ncards += self.possible_cards[color,value]
                             if self.playable_cards[color] == value:
                                 nplayable_cards += self.possible_cards[color,value]
-                cards[card] = ncards/nplayable_cards
-            targeted_cards[player] = np.argmax(cards)
+                cards[card] = nplayable_cards/ncards
+                # print(nplayable_cards)
+            targeted_cards[player] = int(np.argmax(cards))
         return targeted_cards
+
+    def targeted_cards_to_hints(self, targeted_cards):
+
+        hint_tables = np.zeros((self.nplayers,self.ncolors,5))
+        for player in range(0,self.nplayers):
+            # print(targeted_cards[player])
+            hint_table = self.possibility_tables[player,int(targeted_cards[player]),:,:] -1
+            hintnum = 1
+            for value in range(0,5):
+                for color in range(0,self.ncolors):
+                    if hint_table[color,value] == 0 and self.dead_cards[player] < value:
+                        hint_table[color,value] = hintnum
+                        if hintnum != 7:
+                            hintnum += 1
+            u, counts = np.unique(hint_table, return_counts = True)
+
+            if len(counts) ==7:
+                if counts[6] > 8:
+                    seven_surplus = counts[6]-8
+                    six_surplus = 0
+                    if seven_surplus > 8:
+                        six_surplus = seven_surplus-7
+                        seven_surplus = 8
+                    for value in range(0,5):
+                        for color in range(0,self.ncolors):
+                            if (hint_table[color,value] == 7 or hint_table[color,value] == 6) and six_surplus > 0:
+                                hint_table[color,value] = 5
+                                six_surplus -= 1
+                            elif hint_table[color,value] == 7 and seven_surplus >0:
+                                hint_table[color,value] = 6
+                                seven_surplus -= 1
+            hint_tables[player,:,:] = hint_table
+        return hint_tables
+
+
 
 
     def create_players(self, nplayers, commondicts):
@@ -163,9 +200,11 @@ class Game:
         #select player to start
         self.turn_token = 1 #randomize
         self.incorporate_hint_wordly(2,3,1,True)
-        self.incorporate_hint_wordly(4,0,1,False)
+        self.incorporate_hint_wordly(4,0,0,False)
         self.incorporate_hint_wordly(1,2,3,True)
-        print(self.return_targeted_cards())
+        # print(self.possibility_tables[4,0])
+        tg = self.return_targeted_cards()
+        print(self.targeted_cards_to_hints(tg))
         #loop till you out of tokens
         while self.mistake_count>=0:
             #Update player info
