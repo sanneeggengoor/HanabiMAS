@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Hanabi Bot - Multi Agent System</title>
+    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header">
+            <h3 class="text-muted">Hanabi Header!</h3>
+        </div>
+
+        <h4>Player hands are:</h4>
+        <ul>
+            {% for id in manager.playerlist.keys() %}
+            <li>Player ID: {{id}}</li>
+            <li>{{manager.playerlist.get(id).hand|pprint}}</li>>
+            {%endfor%}
+        </ul>
+
+        <div>
+        <p><a class="link-btn" href="report" role="button">Hanabi Bot: Concept and Implementation</a></p>
+        </div>
+
+        <div>
+        <p><a class="link-btn" href="kripke" role="button">See Kripke Models</a></p>
+        </div>
+
+        <footer class="footer">
+            <p>Hanabi Footer!</p>
+        </footer>
+
+    </div>
+</body>
+
+</html>

@@ -12,19 +12,27 @@
     <div class="container">
 
         <div class="header">
-            <h3 class="text-muted">Hanabi Header!</h3>
+            <h3 class="page-header", align="center">Hanabi Bot: Multi Agent Systems</h3>
         </div>
 
-        <h4>Player hands are:</h4>
-        <ul>
-            {% for id in manager.playerlist.keys() %}
-            <li>Player ID: {{id}}</li>
-            <li>{{manager.playerlist.get(id).hand|pprint}}</li>>
-            {%endfor%}
-        </ul>
+        <div class="authors">
+            <h6 class="authors", align="center">Sanne Eggengoor, Nachiket Desai</h6>
+        </div>
+
+        <div class="abstract">
+            <p>Abstract here</p>
+        </div>
 
         <div>
-        <p><a class="link-btn" href="report" role="button">Hanabi Bot: Concept and Implementation</a></p>
+        <p><a class="link-btn" href="introduction" role="button">Introduction</a></p>
+        </div>
+
+        <div>
+        <p><a class="link-btn" href="rules" role="button">Rules</a></p>
+        </div>
+
+        <div>
+        <p><a class="link-btn" href="strategy" role="button">Strategy Discussion</a></p>
         </div>
 
         <div>
@@ -32,7 +40,7 @@
         </div>
 
         <footer class="footer">
-            <p>Hanabi Footer!</p>
+            <p>Thank you!</p>
         </footer>
 
     </div>
