@@ -15,13 +15,21 @@
             <h3 class="text-muted">Hanabi Header!</h3>
         </div>
 
+        <h4>Player hands are:</h4>
+        <ul>
+            {% for id in manager.playerlist.keys() %}
+            <li>Player ID: {{id}}</li>
+            <li>{{manager.playerlist.get(id).hand|pprint}}</li>>
+            {%endfor%}
+        </ul>
+
         <div>
-        <p><a class="btn-tbl" href="kripke" role="button">See Kripke Models</a>
+        <p><a class="btn" href="kripke" role="button">See Kripke Models</a>
         </p>
         </div>
 
         <footer class="footer">
-            <p>Thank you!!</p>
+            <p>Hanabi Footer!</p>
         </footer>
 
     </div>
