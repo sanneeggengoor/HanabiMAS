@@ -20,9 +20,13 @@ def main():
                            manager=manager)
 
 @app.route('/kripke')
-def showTable():
+def show_models():
     return render_template('kripke.html')
 
+
+@app.route('/report')
+def show_report():
+    return render_template('report.html')
 
 if __name__ == '__main__':
     app.run()
