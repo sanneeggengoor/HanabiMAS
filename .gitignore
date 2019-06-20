@@ -2,3 +2,4 @@
 *.xml
 .idea/.name
 .idea/HanabiMAS.iml
+.DS_Store
