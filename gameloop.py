@@ -290,15 +290,15 @@ class Game:
         newcard = np.zeros((self.ncolors,5))
         newcard[np.where(self.possible_cards > 0)] = 1
         self.possibility_tables[player_id,3,:,:] = newcard
-        self.playerlist.get(player_id).hand.pop(card_to_play)
+        carddetails = self.playerlist.get(player_id).hand.pop(card_to_play)
         print('write a function for dealing a new card')
-
         ########### A NEW CARD NEEDS TO BE DEALT
-        #remove card from player, draw card later
+        self.deal_card(pid=player_id)
+        #check for mistake token!
         self.score += 1
 
-    def play_discard(self, player_id, card):
-        self.discard_pile.append(card)
+    def play_discard(self, player_id, card_to_discard):
+        self.discard_pile.append(card_to_discard)
 
 
     def play_game(self):
