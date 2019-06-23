@@ -31,11 +31,13 @@ class Player:
             return ['HINT']
         elif self.check_dead_card(possibility_tables,dead_cards) >= 0:
             return ['DISCARD', self.check_dead_card(possibility_tables,dead_cards)]
+        #TO DO : CHECK NEXT TWO ELIF STATEMENTS
         elif self.check_whether_card_known_duplicate(possibility_tables)!=-1:
             return ['DISCARD', self.check_whether_card_known_duplicate(possibility_tables)]
-        elif self.check_whether_dispensable_card_known(possibility_tables):
-            return["DON'T FORGET TO IMPLEMENT STEP 6 IN ALGORITHM"]
+        elif self.check_whether_dispensable_card_known(possibility_tables, possible_cards)!=-1:
+            return ['DISCARD', self.check_whether_dispensable_card_known(possibility_tables, possible_cards)]
         else:
+            #to do: first card could be indispensible, gets discarded. Add priority to hint?
             return['DISCARD',0]
         action = 'PASS'
         return action
@@ -69,13 +71,18 @@ class Player:
                 card = [play_card_col,play_card_val]
                 for player_id in self.otherplayers.keys():
                     if card in self.otherplayers.get(player_id).hand:
-                        card_index = self.otherplayers.get(player_id).hand.index(card)
-                        return card_index
+                        #card_index = self.otherplayers.get(player_id).hand.index(card)
+                        return card
         return -1
 
 
-    def check_whether_dispensable_card_known(self,possibility_tables):
-        return "still needs to be implemented!"
+    def check_whether_dispensable_card_known(self,possibility_tables,possible_cards):
+        for card in range(0,4):
+            if np.sum(np.sum(possibility_tables[self.id,card,:,:])) == 1:
+                play_card_col, play_card_val = np.where(possibility_tables == 1)
+                if possible_cards[play_card_col]>1:
+                    return card
+        return -1
 
 
 
@@ -140,7 +147,9 @@ class Game:
                             ncards += self.possible_cards[color,value]
                             if self.playable_cards[color] == value:
                                 nplayable_cards += self.possible_cards[color,value]
-                cards[card] = nplayable_cards/ncards
+                #to do : check below line 'ncards' for divide by zero error
+                if ncards!=0:
+                    cards[card] = nplayable_cards/ncards
                 # print(nplayable_cards)
             targeted_cards[player] = int(np.argmax(cards))
         return targeted_cards
@@ -313,7 +322,7 @@ class Game:
         self.discard_pile.append(selected_card)
         self.hint_count+=1
         #check if there are other variables that need updating when a card is discarded
-
+        self.update_possible_cards(self.colors_all.index(selected_card[0]),selected_card[1])
 
     def play_game(self):
         #select player to start
@@ -339,15 +348,16 @@ class Game:
             elif this_act[0] == 'HINT':
                 self.play_hint(self.turn_token, targeted_cards,hint_tables)
             elif this_act[0]=='DISCARD':
-                self.play_discard(card_to_discard=this_act[1])
-            print (this_act)
+                self.play_discard(self.turn_token, this_act[1])
+            print (self.turn_token, this_act)
 
-            #to do: remove the next line and implement in play_card
-            self.mistake_count-=1
+            #to do: remove the next line(self.mistake_count) and implement it in play_card
+            self.mistake_count-=0.2
+            self.print_player_info()
             self.turn_token += 1
             if self.turn_token == self.nplayers:
                 self.turn_token = 0
-
+        #self.play_discard(1,1)
 
 
 def gameloop():
