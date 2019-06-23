@@ -31,8 +31,8 @@ class Player:
             return ['HINT']
         elif self.check_dead_card(possibility_tables,dead_cards) >= 0:
             return ['DISCARD', self.check_dead_card(possibility_tables,dead_cards)]
-        elif self.check_whether_card_known_duplicate(possibility_tables):
-            return["DON'T FORGET TO IMPLEMENT STEP 5 IN ALGORITHM"]
+        elif self.check_whether_card_known_duplicate(possibility_tables)!=-1:
+            return ['DISCARD', self.check_whether_card_known_duplicate(possibility_tables)]
         elif self.check_whether_dispensable_card_known(possibility_tables):
             return["DON'T FORGET TO IMPLEMENT STEP 6 IN ALGORITHM"]
         else:
@@ -63,7 +63,16 @@ class Player:
         return -1
 
     def check_whether_card_known_duplicate(self,possibility_tables):
-        return "still needs to be implemented!"
+        for card in range(0,4):
+            if np.sum(np.sum(possibility_tables[self.id,card,:,:])) == 1:
+                play_card_col, play_card_val = np.where(possibility_tables == 1)
+                card = [play_card_col,play_card_val]
+                for player_id in self.otherplayers.keys():
+                    if card in self.otherplayers.get(player_id).hand:
+                        card_index = self.otherplayers.get(player_id).hand.index(card)
+                        return card_index
+        return -1
+
 
     def check_whether_dispensable_card_known(self,possibility_tables):
         return "still needs to be implemented!"
@@ -292,13 +301,18 @@ class Game:
         self.possibility_tables[player_id,3,:,:] = newcard
         carddetails = self.playerlist.get(player_id).hand.pop(card_to_play)
         print('write a function for dealing a new card')
-        ########### A NEW CARD NEEDS TO BE DEALT
         self.deal_card(pid=player_id)
-        #check for mistake token!
+        #to do: check for mistake token!
         self.score += 1
 
-    def play_discard(self, player_id, card_to_discard):
-        self.discard_pile.append(card_to_discard)
+    def play_discard(self, player_id, card_index):
+        selected_card = self.playerlist.get(player_id).hand.pop(card_index)
+        #shift possibility tables, check if is ok :P
+        self.possibility_tables[player_id,card_index,:,:] = self.possibility_tables[player_id,card_index + 1,:,:]
+        self.deal_card(player_id)
+        self.discard_pile.append(selected_card)
+        self.hint_count+=1
+        #check if there are other variables that need updating when a card is discarded
 
 
     def play_game(self):
@@ -324,18 +338,11 @@ class Game:
                 self.play_card(self.turn_token, this_act[1], this_act[2], this_act[3])
             elif this_act[0] == 'HINT':
                 self.play_hint(self.turn_token, targeted_cards,hint_tables)
+            elif this_act[0]=='DISCARD':
+                self.play_discard(card_to_discard=this_act[1])
             print (this_act)
 
-
-            if this_act == 'HINT':
-                self.play_hint()
-            if this_act == 'DISC':
-                self.play_discard()
-            if this_act == 'PLAY':
-                self.play_card()
-            else:
-                self.play_token = self.play_token+1 if self.play_token != self.nplayers else 1
-
+            #to do: remove the next line and implement in play_card
             self.mistake_count-=1
             self.turn_token += 1
             if self.turn_token == self.nplayers:
