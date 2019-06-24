@@ -1,5 +1,6 @@
 # HanabiMAS
 Multi Agent Systems implementation for Hanabi
+#Authors
 Sanne Eggengoor (s3757994)
 Nachiket Desai (s3713547)
 
