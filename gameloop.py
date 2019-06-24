@@ -23,8 +23,9 @@ class Player:
         self.otherplayers = otherplayers
         self.commondicts = commondicts
 
+# select what to do according to strategy
     def select_action(self,possibility_tables,playable_cards,possible_cards,dead_cards,hint_count,handstable):
-        if not self.check_whether_playable_card(possibility_tables,playable_cards)[0] == -1:
+        if not self.check_whether_playable_card(possibility_tables,playable_cards) == -1:
             return ['PLAY', self.check_whether_playable_card(possibility_tables,playable_cards)]
         elif (np.sum(playable_cards) + (50-np.sum(np.sum(possible_cards)))) < 5 and self.check_dead_card(possibility_tables,dead_cards) >= 0:
             return ['DISCARD UNDER 5', self.check_dead_card(possibility_tables,dead_cards)]
@@ -41,18 +42,26 @@ class Player:
             #to do: first card could be indispensible, gets discarded. Add priority to hint?
             # note sanne: we only go here if there are no hints left
             return['DISCARD FIRST CARD',0]
-        action = 'PASS'
         return action
 
+# check whether one of the cards in the hand is playable, if so, return index of that card
     def check_whether_playable_card(self,possibility_tables,playable_cards):
         for card in range(0,4):
-            if np.sum(np.sum(possibility_tables[self.id,card,:,:])) == 1:
-                [play_card_col, play_card_val] = np.where(possibility_tables[self.id,card,:,:] == 1)
-                if playable_cards[play_card_col] == play_card_val:
-                    return [card,play_card_col, play_card_val]
-        return [-1,-1]
+            possibly_playable = True
+            for color in range(0,5):
+                for value in range(0,5):
+                    # if one of the possibilities is not playable card is not possibly playable
+                    if possibility_tables[self.id,card,color,value] != 0:
+                        if value != playable_cards[color]:
+                            possibly_playable = False
+            if possibly_playable:
+                return card
+        return -1
 
+
+# check whether one of the cards in the hand is dead, if so, return index of that card
     def check_dead_card(self, possibility_tables, dead_cards):
+        # check for each card whether all possibilities are dead
         for card in range(0,4):
             possibly_all_dead = True
             for color in range(0,5):
@@ -66,6 +75,7 @@ class Player:
                 return card
         return -1
 
+# check whether one card is known to be a duplicate (in the hands of other players)
     def check_whether_card_known_duplicate(self,possibility_tables,handstable):
         for card in range(0,4):
             possible_duplicate = True
@@ -78,7 +88,7 @@ class Player:
         return -1
 
 
-
+# check whether one card is known to be dispensable
     def check_whether_dispensable_card_known(self,possibility_tables,possible_cards):
         for card in range(0,4):
             possible_dispensable = True
@@ -133,17 +143,18 @@ class Game:
         if self.possible_cards[card_color, card_value] == 0:
             self.possibility_tables[:,:,card_color, card_value] = 0
 
-# Hints also have to be incorporated wordly
-    def incorporate_hint_wordly(self,player,card,value_color,color_hint):
+# Hints also have to be incorporated wordly (the explicit meaning of the hings)
+    def incorporate_hint_wordly(self,player,cards,value_color,color_hint):
         if color_hint:
             for color in range(0,self.ncolors):
                 if color != value_color:
-                    self.possibility_tables[player,card,color,:] = 0
+                    self.possibility_tables[player,cards,color,:] = 0
         else:
             for value in range(0,5):
                 if value != value_color:
-                    self.possibility_tables[player,card,:, value] = 0
+                    self.possibility_tables[player,cards,:, value] = 0
 
+# what cards can the player see on the table now
     def cards_on_table_seen(self):
         handtotal = []
         for i in range(0,self.nplayers):
@@ -152,12 +163,13 @@ class Game:
         return handtotal
 
 # return the cards that are targeted this round
+# calculates for all players the probability of all cards to be playable
+# and targets the cards with highest probability per player
     def return_targeted_cards(self):
         targeted_cards = np.zeros((self.nplayers))
         for player in range(0,self.nplayers):
             cards = np.zeros((self.ncards))
             for card in range(0,self.ncards):
-                # print("pt = " + str(self.possibility_tables[player,card,:,:]))
                 ncards = 0
                 nplayable_cards = 0
                 for color in range(0,self.ncolors):
@@ -169,8 +181,6 @@ class Game:
                 #to do : check below line 'ncards' for divide by zero error
                 # note sanne: Isn't this impossible? Since it would mean none of the cards are possible
                 # or did it happen?
-                # print("ncards = "+ str(ncards))
-                # print("nplayable_cards = "+ str(nplayable_cards))
                 if ncards!=0:
                     cards[card] = nplayable_cards/ncards
 
@@ -178,12 +188,13 @@ class Game:
 
         return targeted_cards
 
-    def targeted_cards_to_hints(self, targeted_cards):
 
+# create hint tables for all the targeted cards
+    def targeted_cards_to_hints(self, targeted_cards):
+# initialize them with 0's on dead cards, -1's on impossible cards and
+# 1,2,3,4,5,6,7,7,7,7,7,7 etc.
         hint_tables = np.zeros((self.nplayers,self.ncolors,5))
         for player in range(0,self.nplayers):
-            # print(targeted_cards[player])
-            # get targeted cards for this player
             hint_table = self.possibility_tables[player,int(targeted_cards[player]),:,:] -1
             hintnum = 1
             for value in range(0,5):
@@ -193,7 +204,7 @@ class Game:
                         if hintnum != 7:
                             hintnum += 1
             u, counts = np.unique(hint_table, return_counts = True)
-
+            # make sure that no hint value occurs more than 8 times
             if len(counts) > 6:
                 if counts[-1] > 8:
                     seven_surplus = counts[-1]-8
@@ -212,6 +223,160 @@ class Game:
             hint_tables[player,:,:] = hint_table
         return hint_tables
 
+# decide which hint to give, making use of the hint tables
+    def decide_hint(self, origin_player_id,targeted_cards,hint_tables):
+        # decide on which hidden hint to play
+        sum = 0
+        for coplayers in range(0,self.nplayers):
+            if coplayers != origin_player_id:
+                hand = self.playerlist.get(coplayers).hand
+                card_index = targeted_cards[coplayers]
+                hint_table = hint_tables[coplayers,:,:]
+                true_card = hand[int(card_index)]
+                color_int = self.colors_all.index(true_card[0])
+                val = true_card[1]
+                sum += hint_table[color_int,val]
+        hintval = sum%8
+# convert this hidden hint value into a wordly hint
+        hint = self.convert_val_to_hint(origin_player_id,hintval,targeted_cards)
+        return hint
+
+# make a wordly hint of the hint value
+    def convert_val_to_hint(self,player,hintval,targeted_cards):
+        # decode value to wordly hint
+        hint_player = int((hintval%4 + player)%5)
+        hint_color = True
+        if hintval < 4:
+            hint_color = False
+        hand = self.playerlist.get(hint_player).hand
+        tg = targeted_cards[int(hint_player)]
+# decide on which cards to give hints about
+# prioritize colors/values that occur more often
+        if hint_color:
+            indices = []
+            colors = [hand[0][0],hand[1][0],hand[2][0],hand[3][0]]
+            if len(colors) == len(list(set(colors))) + 1:
+                if colors[0] == colors[1]:
+                    indices += [0,1]
+                if colors[0] == colors[2]:
+                    indices += [0,2]
+                if colors[0] == colors[3]:
+                    indices += [0,3]
+                if colors[1] == colors[2]:
+                    indices += [1,2]
+                if colors[2] == colors[3]:
+                    indices += [2,3]
+                if colors[1] == colors[3]:
+                    indices += [1,3]
+            elif len(colors) == len(list(set(colors))) + 2:
+                if colors[0] == colors[1] == colors[2]:
+                    indices += [0,1,2]
+                if colors[3] == colors[1] == colors[2]:
+                    indices += [3,1,2]
+                if colors[0] == colors[1] == colors[3]:
+                    indices += [0,1,3]
+                if colors[0] == colors[2] == colors[3]:
+                    indices += [0,3,2]
+                if colors[0] == colors[1] and colors[2] == colors[3]:
+                    indices += [2,3]
+                if colors[0] == colors[2] and colors[1] == colors[3]:
+                    indices += [1,3]
+                if colors[0] == colors[3] and colors[1] == colors[2]:
+                    indices += [1,2]
+            elif len(list(set(colors))) == 1:
+                indices += [0,1,2,3]
+            else:
+
+                reduce = 0
+                indices = [1]
+
+                for i in range(1,self.ncards):
+                    ncards = np.sum(np.sum(self.possibility_tables[hint_player,i,:,:]))
+                    ncardspercolor = np.sum(self.possibility_tables[hint_player,i,self.colors_all.index(hand[i][0]),:])
+                    if ncards - ncardspercolor > reduce:
+                        reduce = ncards - ncardspercolor
+                        indices = [i]
+
+            return [hint_player,indices,hand[indices[0]][0],hint_color]
+        else:
+            indices = []
+            colors = [hand[0][1],hand[1][1],hand[2][1],hand[3][1]]
+            if len(colors) == len(list(set(colors))) + 1:
+                if colors[0] == colors[1]:
+                    indices += [0,1]
+                if colors[0] == colors[2]:
+                    indices += [0,2]
+                if colors[0] == colors[3]:
+                    indices += [0,3]
+                if colors[1] == colors[2]:
+                    indices += [1,2]
+                if colors[2] == colors[3]:
+                    indices += [2,3]
+                if colors[1] == colors[3]:
+                    indices += [1,3]
+            elif len(colors) == len(list(set(colors))) + 2:
+                if colors[0] == colors[1] == colors[2]:
+                    indices += [0,1,2]
+                if colors[3] == colors[1] == colors[2]:
+                    indices += [3,1,2]
+                if colors[0] == colors[1] == colors[3]:
+                    indices += [0,1,3]
+                if colors[0] == colors[2] == colors[3]:
+                    indices += [0,3,2]
+                if colors[0] == colors[1] and colors[2] == colors[3]:
+                    indices += [2,3]
+                if colors[0] == colors[2] and colors[1] == colors[3]:
+                    indices += [1,3]
+                if colors[0] == colors[3] and colors[1] == colors[2]:
+                    indices += [1,2]
+            elif len(list(set(colors))) == 1:
+                indices += [0,1,2,3]
+            else:
+
+                reduce = 0
+                indices = [1]
+
+                for i in range(1,self.ncards):
+                    ncards = np.sum(np.sum(self.possibility_tables[hint_player,i,:,:]))
+                    ncardspercolor = np.sum(self.possibility_tables[hint_player,i,:, hand[i][1]])
+                    if ncards - ncardspercolor > reduce:
+                        reduce = ncards - ncardspercolor
+                        indices = [i]
+
+            return [hint_player,indices,hand[indices[0]][1],hint_color]
+
+
+    def convey_hidden_hint(self,hint, origin_player_id,targeted_cards,hint_tables):
+        hint_player = (hint[0] + 5 - origin_player_id)%5
+        if hint[3]:
+            hint_player += 4
+        # print("hint_player = "+str(hint_player))
+
+        for coplayers in range(0, self.nplayers):
+            if coplayers != origin_player_id:
+                sum = 0
+                for other in range(0, self.nplayers):
+                    if other != coplayers and other != origin_player_id:
+                        hand = self.playerlist.get(other).hand
+                        # print ('Handsan:',[c for c in hand])
+                        card_index = targeted_cards[other]
+                        # print(card_index)
+                        hint_table = hint_tables[other,:,:]
+                        true_card = hand[int(card_index)]
+                        color_int = self.colors_all.index(true_card[0])
+                        val = true_card[1]
+                        # print("other " + str(other) + str(hint_table[color_int,val]) + str(true_card))
+                        sum += hint_table[color_int,val]
+                # print("sum = " +str(sum))
+                # print("hintval = " +str(sum%8) )
+                # print("hint_player = "+str(hint_player))
+                hintval = (sum + 8)%8
+                hintval = (hint_player + 8 - hintval)%8
+                # print("hv =" +str(hintval))
+                for color in range(0,self.ncolors):
+                    for value in range(0,5):
+                        if hint_tables[coplayers,color,value] != hintval:
+                            self.possibility_tables[coplayers,int(targeted_cards[coplayers]),color,value] =0
 
 
 
@@ -273,91 +438,12 @@ class Game:
             #print (othersdict)
             thisplayer.update_info(otherplayers=othersdict, commondicts=commondicts)
 
-    def decide_hint(self, origin_player_id,targeted_cards,hint_tables):
-        # decide on which hint to play
-        sum = 0
-        for coplayers in range(0,self.nplayers):
-            if coplayers != origin_player_id:
-                hand = self.playerlist.get(coplayers).hand
-                # print ('Handsan:',[c for c in hand])
-                card_index = targeted_cards[coplayers]
-                # print(card_index)
-                hint_table = hint_tables[coplayers,:,:]
-                true_card = hand[int(card_index)]
-                color_int = self.colors_all.index(true_card[0])
-                val = true_card[1]
-                sum += hint_table[color_int,val]
-        hintval = sum%8
-        # print("hv =" + str(hintval))
-        # print(hint_tables)
-        hint = self.convert_val_to_hint(origin_player_id,hintval,targeted_cards)
-        return hint
-
-    def convey_hidden_hint(self,hint, origin_player_id,targeted_cards,hint_tables):
-        hint_player = (hint[0] + 5 - origin_player_id)%5
-        if hint[3]:
-            hint_player += 4
-        # print("hint_player = "+str(hint_player))
-
-        for coplayers in range(0, self.nplayers):
-            if coplayers != origin_player_id:
-                sum = 0
-                for other in range(0, self.nplayers):
-                    if other != coplayers and other != origin_player_id:
-                        hand = self.playerlist.get(other).hand
-                        # print ('Handsan:',[c for c in hand])
-                        card_index = targeted_cards[other]
-                        # print(card_index)
-                        hint_table = hint_tables[other,:,:]
-                        true_card = hand[int(card_index)]
-                        color_int = self.colors_all.index(true_card[0])
-                        val = true_card[1]
-                        # print("other " + str(other) + str(hint_table[color_int,val]) + str(true_card))
-                        sum += hint_table[color_int,val]
-                # print("sum = " +str(sum))
-                # print("hintval = " +str(sum%8) )
-                # print("hint_player = "+str(hint_player))
-                hintval = (sum + 8)%8
-                hintval = (hint_player + 8 - hintval)%8
-                # print("hv =" +str(hintval))
-                for color in range(0,self.ncolors):
-                    for value in range(0,5):
-                        if hint_tables[coplayers,color,value] != hintval:
-                            self.possibility_tables[coplayers,int(targeted_cards[coplayers]),color,value] =0
-
-    def convert_val_to_hint(self,player,hintval,targeted_cards):
-        hint_player = int((hintval%4 + player)%5)
-        hint_color = True
-        if hintval < 4:
-            hint_color = False
-        hand = self.playerlist.get(hint_player).hand
-        tg = targeted_cards[int(hint_player)]
-        # TO DO: IMPLEMENT MOST INFORMATIVE WORDLY HINTS
-        # TO DO: MAKE SURE THAT THE HINT MAKES NUMBER OF POSSIBILITIES SMALLER
-        # prefer giving hints about colors or values with multiple occurences
-        if hint_color:
-            reduce = 0
-            card = 0
-            for i in range(1,self.ncards):
-                ncards = np.sum(np.sum(self.possibility_tables[hint_player,i,:,:]))
-                ncardspercolor = np.sum(self.possibility_tables[hint_player,i,self.colors_all.index(hand[i][0]),:])
-                if ncards - np.max(ncardspercolor) > reduce:
-                    reduce = ncards - ncardspercolor
-                    card = i
-            return [hint_player,card,hand[card][0],hint_color]
-        else:
-            reduce = 0
-            card = 0
-            for i in range(1,self.ncards):
-                ncards = np.sum(np.sum(self.possibility_tables[hint_player,i,:,:]))
-                ncardsperval = np.sum(self.possibility_tables[hint_player,i,:,hand[i][1]])
-                if ncards - np.max(ncardsperval) > reduce:
-                    reduce = ncards - ncardsperval
-                    card = i
-            return [hint_player,card,hand[card][1],hint_color]
 
 
-    def play_card(self, player_id, card_to_play, color, value):
+    def play_card(self, player_id, card_to_play):
+        carddetails = self.playerlist.get(player_id).hand.pop(card_to_play)
+        color = self.colors_all.index(carddetails[0])
+        value = carddetails[1]
         self.dead_cards[color] += 1
         self.playable_cards[color] += 1
         self.update_possible_cards(color,value)
@@ -366,7 +452,7 @@ class Game:
         newcard = np.zeros((self.ncolors,5))
         newcard[np.where(self.possible_cards > 0)] = 1
         self.possibility_tables[player_id,3,:,:] = newcard
-        carddetails = self.playerlist.get(player_id).hand.pop(card_to_play)
+
         self.deal_card(pid=player_id)
         self.score += 1
 
@@ -397,6 +483,7 @@ class Game:
         last_turn = True
         player_last_turn = 0
         while self.mistake_count>=0 and self.score != 25 and sum(sum(self.possible_cards)) > self.nplayers * self.ncards and last_turn == True:
+            # make sure every player gets one last turn before the game ends
             if sum(sum(self.possible_cards)) <= self.nplayers * self.ncards:
                 player_last_turn += 1
                 if player_last_turn == self.nplayers:
@@ -408,45 +495,36 @@ class Game:
             hint_tables = self.targeted_cards_to_hints(targeted_cards)
             #Call to player for action
             this_act = self.playerlist.get(self.turn_token).select_action(self.possibility_tables,self.playable_cards,self.possible_cards, self.dead_cards,self.hint_count,self.cards_on_table_seen())
-            #get all details required for action
-            # print(this_act)
+            # perform action
             if this_act[0] == 'PLAY':
-                # print(this_act)
-                self.play_card(self.turn_token, this_act[1][0], this_act[1][1], this_act[1][2])
+                self.play_card(self.turn_token, this_act[1])
             elif this_act[0] == 'HINT':
-
+                # decide which hint to give
                 hint = self.decide_hint(self.turn_token, targeted_cards,hint_tables)
                 if hint[3]:
                     value_color =  int(self.colors_all.index(hint[2]))
                 else:
                     value_color = hint[2]
+                # convey the hidden meaning
                 self.convey_hidden_hint(hint,self.turn_token,targeted_cards,hint_tables)
-                self.incorporate_hint_wordly(int(hint[0]),int(hint[1]),value_color,hint[3])
+                # convey the wordly meaning
+                self.incorporate_hint_wordly(int(hint[0]),hint[1],value_color,hint[3])
                 self.hint_count = self.hint_count -1
-                # print(hint)
+
             elif this_act[0].split()[0]=='DISCARD':
                 self.play_discard(self.turn_token, this_act[1])
-            # print (self.turn_token, this_act)
-            # print("tg = " + str(targeted_cards))
-            # print("pc = " + str(self.playable_cards))
-            # for i in range(0,self.nplayers):
-            #     print("pos table p " + str(i) + " " + str(self.possibility_tables[i,int(targeted_cards[i]),:,:]))
-            #to do: remove the next line(self.mistake_count) and implement it in play_card
-            # self.mistake_count-=0.2
-            # self.print_player_info()
+# switch turns
             self.turn_token += 1
             if self.turn_token == self.nplayers:
                 self.turn_token = 0
-            # self.mistake_count -= 0.5
         print("Score = " + str(self.score))
         print("Num Cards Left = " + str(sum(sum(self.possible_cards))))
         return self.score
-        #self.play_discard(1,1)
 
 
 def gameloop():
     scores = []
-    for i in range(0,100):
+    for i in range(0,1000):
 
         manager = Game(5,4,5)
         # print (manager.playerlist)
