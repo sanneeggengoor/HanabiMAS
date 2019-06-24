@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Objects in Python</title>
+</head>
+<body>
+    <div class="title">
+        <h4 class="section">Implementing objects in Python</h4>
+    </div>
+    <div class="content", align="left">
+        <p>Currently we are implementing the game in python. We created the classes Player and Game.</p>
+        <p>The Player object contains an empty list representing its own hand, a dictionary containing the information of teammates and the cards they hold, and a list containing all the colors involved in the game. The object has an id variable that helps us identify in between players.</p>
+        <p>The Game Manager is a larger object that initiates the game, keeps track of all current game data and states and manages player turns. Since this is the most consistent location of information, it is also responsible for updating any change in state of Player object. At the beginning of each turn, it updates the information held by the Players. The manager is in charge of maintenance of all the data structures relating to common knowledge, it provides information to players based on the game state. This includes possibility matrices, 'playable cards' and other trackers and arrays used to arrive to conclusions, the primary variables about the game such as number of colors, players, tokens etc .It also checks the validity of actions taken during turns, and carries out activity that does not include player choice. Every turn, it passed the player token and calls for the player to make a choice, all actions relating to this choice are also checked and carried out by the manager, the player tells the manager the choice and necessary details.</p>
+    </div>
+
+    <div>
+        <p><a class="home-btn" href="/" role="button">Home</a></p>
+    </div>
+</body>
+</html>
