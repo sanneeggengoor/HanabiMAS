@@ -1,6 +1,7 @@
 
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Card:
     def __init__(self, color, number, id):
@@ -178,9 +179,6 @@ class Game:
                             ncards += self.possible_cards[color,value]
                             if self.playable_cards[color] == value:
                                 nplayable_cards += self.possible_cards[color,value]
-                #to do : check below line 'ncards' for divide by zero error
-                # note sanne: Isn't this impossible? Since it would mean none of the cards are possible
-                # or did it happen?
                 if ncards!=0:
                     cards[card] = nplayable_cards/ncards
 
@@ -513,7 +511,7 @@ class Game:
 
             elif this_act[0].split()[0]=='DISCARD':
                 self.play_discard(self.turn_token, this_act[1])
-            # switch turns
+# switch turns
             self.turn_token += 1
             if self.turn_token == self.nplayers:
                 self.turn_token = 0
@@ -524,7 +522,7 @@ class Game:
 
 def gameloop():
     scores = []
-    for i in range(0,1000):
+    for i in range(0,500):
 
         manager = Game(5,4,5)
         # print (manager.playerlist)
@@ -532,6 +530,12 @@ def gameloop():
         # manager.print_player_info()
         scores += [manager.play_game()]
     print(np.mean(scores))
+    plt.hist(scores)
+    plt.xticks(list(set(scores)))
+    plt.title('Scores Distribution over 500 games for 5 players')
+    plt.xlabel('Final Scores')
+    plt.ylabel('Count')
+    plt.show()
 
     #get latest game elements
     #decide action
@@ -542,8 +546,8 @@ def gameloop():
     #next turn
 
 gameloop()
-# manager = Game(5,4,5)
+#manager = Game(5,4,5)
 # print (manager.playerlist)
-# manager.deal_initial()
+#manager.deal_initial()
 # manager.print_player_info()
-# manager.play_game()
+#manager.play_game()

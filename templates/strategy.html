@@ -6,9 +6,55 @@
 </head>
 
 <body>
-    <div class="section">
-        <h4 class="section", align="left">Strategy</h4>
-        <p>Explain strategy here. Could really use a start off here cz I read the code multiple times but have been unable to wholly grasp what's going on!</p>
+    <div class='title'>
+        <h4 class="title">Strategy</h4>
+    </div>
+    <div class="content", align="left">
+    <div class="content">
+        <p>Hanabi is an interesting game, which becomes clear when looking into more research that has been done on this. One strategy, by Cox et al. (2015), particularly took our attention. It has been described in a mathematics magazine and gained good results. However, an interpretation in epistemic logic wasn't included. In this project, the interpretation in epistemic logic is added to the system.</p>
+        <p>We focus on the Information Strategy described in the paper. This strategy takes into account both public and private knowledge of each player and the players choose actions aiming to efficiently collect points, tokens or prioritize information on the most playable card and achieve the maximum score of 25.</p>
+    </div>
+    </div>
+
+    <div class="content">
+        <h4 class="content", align="left">Hat Guessing Game</h4>
+        <p>We first discuss a strategy for a hat guessing game, in order to understand how we can use a similar method to derive conclusions about the cards in a player's own hand.</p>
+        <p>When there are 2 colors of hats in a hat guessing game, say red and blue, the first person counts the number of hats of one color, say red, that is previously agreed upon by all other players. The player then divides this count by 2, which is the total number of possible colors. Then the remainder is passed as information encoded in the hint. For example the players could have previously agreed that red means 1 and blue means zero. Since the players of the game are considered to be intelligent and they can stick to a common strategy, this helps all the other players guess the color of their hat correctly. The next player counts the number of red hats ignoring the hat of the player giving the hint. He understands depending on the remainder whether his hat is red or blue. Consequently the remaining players can now correctly guess the color of their own hats by using the same strategy.</p>
+        <p>Now imagine there were actually 8 different colors of hats available. Like the last time, we again label the colors of the hats with numbers, this time ranging 0-7. </p>
+        <p>Now, player 1 will guess a color and intend to give a hint, by adding the numbers that correspond to the colors on the hats of the other players, and dividing that total by the total number of colors 8. This allows us to use the same logic as explained before. The next player will calculate the total of the numbers corresponding to the hats of the players other than the first player and himself. He then compares this total with the nearest number that would give him the same denominator as the one hinted by the first player. This number implies the color of his own hat. In this manner, all the players except the first can correctly tell the color of their own hat.</p>
+        <p>Note how we use the color of the hats as a way of passing on information to the group, similarly, in our implementation of Hanabi, the players understand that the numbers 0-7 each have a certain implication, and that the hint will be shared with the rest of the group encoded within the hints that are allowed by the rules. This understanding that the players share is expressed further in this section.</p>
+    </div>
+
+    <div class="content">
+        <h4 class="content", align="left">Hanabi</h4>
+        <p>For this strategy, information is represented on multiple levels. First there are possibility matrices, for each card of every player. These contain which card values are possible for this specific card. This information is made public knowledge in order to help each player keep track of who knows what, i.e that information relayed by previous hints is assumed to be known and remembered by all players. Furthermore, there is an array with possible cards, this contains all the cards that have not been played, nor discarded. Therefore, this array keeps track of all the possible cards that are still in rotation/play. This information is also public as it pertains to common knowledge distributed in the game. Another list stores the dead cards that are of no use to us as a copy has already been played, and there is a list that keeps track of the playable cards for each color. Together these provide and contain the essential log of common information that is used in the decision making process.</p>
+        <p>Once the players have been dealt the initial cards and tokens, all the player information is updated. This information update happens at very start of every turn. The players then use the following order or priority to choose a turn action:</p>
+        <ol>
+            <li>If there is a playable card, play the playable card with the least index.</li>
+            <li>If less than 5 cards are in the discard pile, check if there is a dead card. Discard it.</li>
+            <li>If there are any hint tokens available, give a hint.</li>
+            <li>Check if there is a dead card, discard it.</li>
+            <li>If a known card in your own hand, is the same as a card in another player's hand. Discard this card from your hand.</li>
+            <li>Look at the known cards of your own hand, if there are any dispensable cards (cards that have other copies of it still in play), discard it.</li>
+            <li>Discard the first card.</li>
+        </ol>
+    </div>
+    <div class="content">
+        <h4 class="content", align="left">Giving a hint</h4>
+        <p>Since everybody knows which cards are possible for all the cards in everyone's hand, it is possible to compute the probability that a certain card is playable (i.e. could be immediately played). For every player the card with the highest probability is targeted. For this card a hint table is computed. This is a table of dimensions ncolors * nvalues, all the cards that are not possible are given value -1, all cards that are dead (i.e. can never be played anymore, because they are already on the table) have value 0 and values 1 to 7 are given to the other cards. First of all, it is important that there is no value from 1 to 7 that occurs more than 8 times, since that would mean that it is not possible to convey the value of the card within 2 hints. Furthermore, as many singleton values as possible are wished, since a singleton value means that the value of the card is immediately known. Because lower valued cards are easier to play, these get a priority in becoming a singleton value, therefore the hint values could be: 1,2,3,4,5,6,6,6,7,7,7,7,7,7,7,7 (only for the possible and not dead cards).</p>
+        <p>For each player it is possible to see which value the hint will take for other players, except for themselves (since they do not know their own card). The hint value is determined at seeing which value is in the hint table for the true targeted card.</p>
+        <p>Next the player in turn will count up all the hint values of the other players, and will perform modulo 8 on this sum. The resulting value will be used in determining the hint that the player will give.</p>
+        <ul>
+            <li>0: Value hint to player 1 to the right</li>
+            <li>1: Value hint to player 2 to the right</li>
+            <li>2: Value hint to player 3 to the right</li>
+            <li>3: Value hint to player 4 to the right</li>
+            <li>4: Color hint to player 1 to the right</li>
+            <li>5: Color hint to player 2 to the right</li>
+            <li>6: Color hint to player 3 to the right</li>
+            <li>7: Color hint to player 4 to the right</li>
+        </ul>
+        <p>This hint can then be decoded by all the players, to determine the modulo 8 of the sum of all the values. Since the values of the other players are known by every player, every player can determine the value of its own hint. Because it knows the hint table on which this hint was based, it can discard all cards in the possibility matrix that are not of this hint value. Of course, also the wordly meaning of the hint will be used. In the implementation the hint with which information about the highest number of cards is chosen.</p>
     </div>
 
     <div>

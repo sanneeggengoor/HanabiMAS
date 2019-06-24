@@ -6,17 +6,19 @@
 </head>
 
 <body>
-    <div class="section">
-        <h4 class="section", align="left">Rules</h4>
-        <p>We use the normal version of the Hanabi game. There are 50 cards in total divided into 5 suits/colors. Each suit has 10 cards, each card has a number ranging from 1 to 5. The ten cards in each suit as distributed as follows amongts the ranks/numbers: three 1’s, two 2’s, two 3’s, two 4’s and one 5 card.</p>
-        <p>At the beginning of the game, the players collectively have 8 hint tokens and 3 mistake tokens. Each player is dealt 4 cards, these cards can only be seen by all the other players but not the owner itself. Now the players take turns one by one in a fixed order. For his/her turn, a player can choose to perform one of the following three action:</p>
-        <ol>
-            <li>Hint: </li>
-            <li>Play:</li>
-            <li>Discard:</li>
-        </ol>
-        <p></p>
+    <div class='title'>
+        <h4 class="title">Rules</h4>
+    </div>
+    <div class="content", align="left">
 
+        <p>In Hanabi there are cards of six different colours (five when playing with 2 or 3 players), of each of these colours there are 10 cards with different values (3 cards with value 1, 2 cards with value 2, 2 cards with value 3, 2 cards with value 4 and 1 card with value 5). Furthermore, there are 8 fiches which keep count of the number of hints given. This could also be described as 8 hints being available at the beginning (<i>h = 8</i>). Lastly, there are 3 fiches which keep count of the number of mistakes made. Similarly, this could be described as 3 mistakes being allowed (<i>m = 3</i>).</p>
+        <p>After the cards are shuffled, each player gets 4 cards (5 when playing with 2 or 3 players). The difference with most games here, is that all the other players can see what cards a player have, except for the player him/herself. In every turn there are three possibilities:</p>
+        <ol>
+            <li>Give a hint: A player can use its turn to give a hint. These hints are bound to rules, it can either be a hint about the colour of the cards of a player (e.g. card 1, 2 and 4 are red), or be a hint about the value of the cards of a player (e.g. card 2 has the value 4). Also, the hints can never be a negation (e.g. you do not have any red card) and can never be combinations of colour and value information (e.g. card 2 is a red 4). The player must clearly point to the card/cards it is referring to. After giving a hint the number of available hints will be decreased by one ( <i>h -= 1</i>). These hints can be seen as public announcements. (NOTE: only possible if <i>h>0</i>)</li>
+            <li>Play a card: A player can use its turn to play a card. A card is correctly played if it creates a new stack (allowed if the value is 1) or if it is placed on an existing stack with the same colour and has the 'next' value (e.g. a red 4 on a stack with a red 1, 2 and 3). If a card is wrongly played, it has to go to the discard pile. All players have seen this card, so therefore they all know that it is not in the pile of cards left or in anyone's hand. When a mistake has been made the number of allowed mistakes decreases by 1 (<i>m -= 1</i>). If <i>m = 0</i>, the fireworks go off and the game ends.Furthermore, if a card is correctly played and finishes a stack (i.e. the stack is complete from 1 to 5), a new hint is added, with a maximum of 8 hints (<i>h += 1</i>, if <i>h < 8</i>).</li>
+            <li>Discard a card: A player can use its turn to discard a card. The player has to show the card that he or she wants to discard and put it on the discard pile. As a result, all the players know now that the card can never come back. Also, a new hint is added, with a maximum of 8 hints (<i>h += 1</i>, if <i>h < 8</i>).</li>
+        </ol>
+        <p>At the end of each turn, the player gets a card from the pile (not the discard pile), to make sure they have 4 (or 5) cards in their hands again. When the game ends, the number of cards on the stacks on the table get counted, which is the number of points scored.</p>
     </div>
 
     <div>

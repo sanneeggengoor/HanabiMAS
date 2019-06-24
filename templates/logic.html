@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logic</title>
+</head>
+<body>
+    <div class="title">
+        <h4 class="section">Logic</h4>
+    </div>
+    <div class="content", align="left">
+        <p>As the complete model would be enormous, it has been drawn on three levels. First of all, the zoomed out level. In this model, all the players are drawn. They have arrows from themselves towards all players. For example, for player 1, this means that he will never doubt between states where only information of player 4 or 5 is different. Therefore, there is no arrow between 4 and 5 for player 1. However, he is always in doubt about his own information, therefore there are arrows from himself towards all other players.  Reflexive arrows are present everywhere, if we know the details, we know we know them. When we zoom in we get to the model for the cards of a particular player (player 1 in this case). Here there are arrows between all states for player 1, but only reflexive arrows for all the other players. As a result, all other players know details about the cards, except for player 1. When we zoom in to the smallest level, a part of the kripke model for all possibilities for one card from player 1 are drawn. Note that this is only a subset of all the possibilities for this one card. For each card, all the players have reflexive arrows, but the only arrows between cards are from player 1. This means that only player 1 is in doubt about his own cards.</p>
+        <p>The strategy involves hints, in which a lot of information is given. These hints can be rewritten into rules.</p>
+
+        <p>If a hint is given, this hint is then common knowledge: </p>
+        <p><img src="/static/logic1.png"></p>
+
+        <p>The targeted cards can be computed by anyone, therefore they are common knowledge: </p>
+        <p><img src="/static/logic2.png"></p>
+
+        <p>The hint tables can be computed by anyone, therefore they are common knowledge:</p>
+        <p><img src="/static/logic3.png"></p>
+
+        <p>Furthermore, if you know the targeted cards, hint tables and the true cards you can determine the value of the hint for all players except yourself and the one in turn. For any player P and other player 1 (which is not in turn):</p>
+        <p><img src="/static/logic4.png"></p>
+
+        <p>For any player P and other players 1,2,3 (which are not the player in turn and P):</p>
+        <p><img src="/static/logic5.png"></p>
+
+        <p>As a result, the hint value for all players (except player in turn) are common knowledge:</p>
+        <p><img src="/static/logic6.png"></p>
+
+        <p>Furthermore, if the hint value  is known, for player i:</p>
+        <p><img src="/static/logic7.png"></p>
+
+        <p>Since the hinttable and hint values are common knowledge, what each player considers possible for this card is common knowledge:</p>
+        <p><img src="/static/logic8.png"></p>
+
+        <p>Furthermore, if a card is played or discarded, this is known to everybody, and they will update they're possibility matrices accordingly:</p>
+        <p><img src="/static/logic9.png"></p>
+
+
+    </div>
+
+    <div>
+        <p><a class="home-btn" href="/" role="button">Home</a></p>
+    </div>
+</body>
+</html>
