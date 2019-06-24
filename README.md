@@ -13,3 +13,6 @@ Instructions:
   - pip install numpy
 - Run app.py (use terminal to navigate to containing folder and use command 'python app.py')
 - Go to the link displayed in output to view site. It should look like 'Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)'
+
+
+To run the game alone, run gameloop.py.
