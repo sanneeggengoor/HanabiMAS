@@ -32,13 +32,14 @@ class Player:
             return ['HINT']
         elif self.check_dead_card(possibility_tables,dead_cards) >= 0:
             return ['DISCARD DEAD CARD', self.check_dead_card(possibility_tables,dead_cards)]
-        #TO DO : CHECK NEXT TWO ELIF STATEMENTS: I think they're good
+        #TO DO : CHECK NEXT TWO ELIF STATEMENTS: I've improved them'
         elif self.check_whether_card_known_duplicate(possibility_tables,handstable) !=-1:
             return ['DISCARD DUPLICATE', self.check_whether_card_known_duplicate(possibility_tables,handstable)]
         elif self.check_whether_dispensable_card_known(possibility_tables, possible_cards)!=-1:
             return ['DISCARD DISPENSABLE', self.check_whether_dispensable_card_known(possibility_tables, possible_cards)]
         else:
             #to do: first card could be indispensible, gets discarded. Add priority to hint?
+            # note sanne: we only go here if there are no hints left
             return['DISCARD FIRST CARD',0]
         action = 'PASS'
         return action
@@ -111,7 +112,7 @@ class Game:
         self.center = {}
         self.playable_cards = np.zeros((ncolors))
         self.dead_cards = np.zeros((ncolors)) -1
-        print(self.playable_cards)
+        # print(self.playable_cards)
         self.discard_pile = []
         self.commondicts = {'center': self.center,
                             'discard_dict': self.discard_pile
@@ -325,7 +326,7 @@ class Game:
                             self.possibility_tables[coplayers,int(targeted_cards[coplayers]),color,value] =0
 
     def convert_val_to_hint(self,player,hintval,targeted_cards):
-        hint_player = (hintval%4 + player)%5
+        hint_player = int((hintval%4 + player)%5)
         hint_color = True
         if hintval < 4:
             hint_color = False
@@ -335,17 +336,25 @@ class Game:
         # TO DO: MAKE SURE THAT THE HINT MAKES NUMBER OF POSSIBILITIES SMALLER
         # prefer giving hints about colors or values with multiple occurences
         if hint_color:
-            if tg != 1:
-                return [hint_player,1,hand[1][0],hint_color]
-            else:
-                return [hint_player,2,hand[2][0],hint_color]
+            reduce = 0
+            card = 0
+            for i in range(1,self.ncards):
+                ncards = np.sum(np.sum(self.possibility_tables[hint_player,i,:,:]))
+                ncardspercolor = np.sum(self.possibility_tables[hint_player,i,self.colors_all.index(hand[i][0]),:])
+                if ncards - np.max(ncardspercolor) > reduce:
+                    reduce = ncards - ncardspercolor
+                    card = i
+            return [hint_player,card,hand[card][0],hint_color]
         else:
-            if tg != 1:
-                return [hint_player,1,hand[1][1],hint_color]
-            else:
-                return [hint_player,2,hand[2][1],hint_color]
-
-
+            reduce = 0
+            card = 0
+            for i in range(1,self.ncards):
+                ncards = np.sum(np.sum(self.possibility_tables[hint_player,i,:,:]))
+                ncardsperval = np.sum(self.possibility_tables[hint_player,i,:,hand[i][1]])
+                if ncards - np.max(ncardsperval) > reduce:
+                    reduce = ncards - ncardsperval
+                    card = i
+            return [hint_player,card,hand[card][1],hint_color]
 
 
     def play_card(self, player_id, card_to_play, color, value):
@@ -358,16 +367,12 @@ class Game:
         newcard[np.where(self.possible_cards > 0)] = 1
         self.possibility_tables[player_id,3,:,:] = newcard
         carddetails = self.playerlist.get(player_id).hand.pop(card_to_play)
-        # print('write a function for dealing a new card')
         self.deal_card(pid=player_id)
-        #to do: check for mistake token!
-        # I think playing is only allowed when you're sure, therefore no mistakes will be made right?
         self.score += 1
 
     def play_discard(self, player_id, card_index):
-        print(card_index)
+        # print(card_index)
         selected_card = self.playerlist.get(player_id).hand.pop(card_index)
-        #shift possibility tables, check if is ok :P
         for card in range(card_index,3):
             self.possibility_tables[player_id,card,:,:] = self.possibility_tables[player_id,card + 1,:,:]
         newcard = np.zeros((self.ncolors,5))
@@ -404,7 +409,7 @@ class Game:
             #Call to player for action
             this_act = self.playerlist.get(self.turn_token).select_action(self.possibility_tables,self.playable_cards,self.possible_cards, self.dead_cards,self.hint_count,self.cards_on_table_seen())
             #get all details required for action
-            print(this_act)
+            # print(this_act)
             if this_act[0] == 'PLAY':
                 # print(this_act)
                 self.play_card(self.turn_token, this_act[1][0], this_act[1][1], this_act[1][2])
@@ -435,15 +440,21 @@ class Game:
             # self.mistake_count -= 0.5
         print("Score = " + str(self.score))
         print("Num Cards Left = " + str(sum(sum(self.possible_cards))))
+        return self.score
         #self.play_discard(1,1)
 
 
 def gameloop():
-    manager = Game(5,4,5)
-    print (manager.playerlist)
-    manager.deal_initial()
-    manager.print_player_info()
-    manager.play_game()
+    scores = []
+    for i in range(0,100):
+
+        manager = Game(5,4,5)
+        # print (manager.playerlist)
+        manager.deal_initial()
+        # manager.print_player_info()
+        scores += [manager.play_game()]
+    print(np.mean(scores))
+
     #get latest game elements
     #decide action
         #hint
@@ -452,9 +463,9 @@ def gameloop():
         #updates lie within action code
     #next turn
 
-#gameloop()
-manager = Game(5,4,5)
-print (manager.playerlist)
-manager.deal_initial()
-manager.print_player_info()
-manager.play_game()
+gameloop()
+# manager = Game(5,4,5)
+# print (manager.playerlist)
+# manager.deal_initial()
+# manager.print_player_info()
+# manager.play_game()
