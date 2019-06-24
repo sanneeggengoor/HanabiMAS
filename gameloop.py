@@ -347,7 +347,7 @@ class Game:
 
 
     def convey_hidden_hint(self,hint, origin_player_id,targeted_cards,hint_tables):
-        hint_player = (hint[0] + 5 - origin_player_id)%5
+        hint_player = (hint[0] + 5 - origin_player_id)%4
         if hint[3]:
             hint_player += 4
         # print("hint_player = "+str(hint_player))
